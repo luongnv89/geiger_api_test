@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geiger_api/geiger_api.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 // import 'package:toolbox_api_test/geiger_connector.dart';
 // import 'package:toolbox_api_test/utils.dart';
@@ -19,9 +21,21 @@ Future<void> main() async {
   runApp(MyApp());
 }
 
+Future<String> getPluginPath(String pluginId) async {
+  Directory dirPath = await getApplicationDocumentsDirectory();
+  return new Directory(dirPath.path + '/').create(recursive: true)
+      // The created directory is returned as a Future.
+      .then((Directory directory) {
+    // print('Path of New Dir: ' + directory.path);
+    return '${dirPath.path}/$pluginId';
+  });
+}
+
 Future<void> initGeigerAPI() async {
   try {
-    geigerApi = await getGeigerApi('<unspecified>', 'miCyberrangePlugin');
+    String pluginIDFile = await getPluginPath('miCyberrangePlugin');
+    log('PluginID file path $pluginIDFile');
+    geigerApi = await getGeigerApi('<unspecified>', pluginIDFile);
   } catch (e) {
     log('Failed to get the GeigerAPI');
     log(e.toString());
