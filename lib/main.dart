@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:toolbox_api_test/geiger_connector.dart';
 
 GeigerConnector geigerConnector = GeigerConnector();
+String? firstData;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await geigerConnector.initGeigerAPI();
+  firstData = await geigerConnector.readDataFromGeigerStorage();
   runApp(MyApp());
 }
 
@@ -27,7 +29,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   // Get battery level.
-  String geigerData = 'Failed';
+  String geigerData = firstData ?? 'Failed';
   TextEditingController inputDataController = TextEditingController();
   // bool _isReady = isReady;
   @override
