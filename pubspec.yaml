@@ -24,8 +24,7 @@ dependencies:
   flutter:
     sdk: flutter
   sqlite3_flutter_libs: ^0.5.0
-  geiger_api:
-    path: ../cores/toolbox-communicationApi
+  geiger_api: 0.5.4
 
 dev_dependencies:
   flutter_test:
