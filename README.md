@@ -1,16 +1,9 @@
-# toolbox_api_test
+# Geiger API Test
 
-A new Flutter project.
+A Flutter project aims to test the GeigerAPI as a [MWE](https://stackoverflow.com/help/minimal-reproducible-example).
+It also can be consider as a starting point to using the GeigerAPI
 
 ## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Clone the project: `git clone https://github.com/luongnv89/geiger_api_test.git`
+- Download the dependencies: `flutter pub get`
+- Install & Test the app on your device/emulator. `flutter run`
