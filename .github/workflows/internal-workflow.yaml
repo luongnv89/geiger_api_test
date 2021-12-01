@@ -1,4 +1,4 @@
-name: Tests Application
+name: Internal Workflow
 on:
   workflow_dispatch:
   push:
@@ -19,9 +19,10 @@ jobs:
     - name: -> Relocate the keystore file
       run: cp ${{steps.decode_keystore.outputs.filePath}} android/
     - name: -> Setup Flutter environment
-      uses: subosito/flutter-action@4389e6cbc6cb8a4b18c628ff96ff90be0e926aa8
+      uses: subosito/flutter-action@v1
       with:
-        channel: master
+        flutter-version: '2.5.3'
+        channel: 'stable'
     - name: -> Check the environment
       run: flutter doctor -v
     - name: -> Install dependencies
