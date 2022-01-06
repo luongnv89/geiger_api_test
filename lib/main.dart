@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geiger_api/geiger_api.dart';
 import 'package:toolbox_api_test/geiger_connector.dart';
@@ -60,9 +61,19 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: ListView.builder(
                     itemCount: events.length,
                     itemBuilder: (context, index) {
+                      List<int> payload = events[index].payload;
+                      String payloadText = payload.toString();
+                      if (payload.isNotEmpty) {
+                        try {
+                          payloadText = utf8.decode(payload);
+                        } catch (e) {
+                          log('Failed to decode payload: ${e.toString()}');
+                        }
+                      }
                       return ListTile(
-                        leading: Text(events[index].requestId),
-                        title: Text(events[index].toString()),
+                        leading: Text(events[index].type.toString()),
+                        title: Text(
+                            '${events[index].sourceId}-${events[index].targetId}|$payloadText'),
                       );
                     },
                   ),
