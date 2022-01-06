@@ -3,21 +3,31 @@ import 'dart:developer';
 import 'package:geiger_api/geiger_api.dart';
 import 'package:geiger_localstorage/geiger_localstorage.dart';
 
-class GeigerConnector {
-  late GeigerApi? geigerApi;
-  late StorageController? storageController;
+import 'simple_event_listener.dart';
 
+class GeigerConnector {
+  late GeigerApi? localMaster;
+  late SimpleEventListener? masterListener;
+  late StorageController? storageController;
   Future<void> initGeigerAPI() async {
     try {
       flushGeigerApiCache();
-      geigerApi = await getGeigerApi(
+      // Init local master
+      localMaster = await getGeigerApi(
           '', GeigerApi.masterId, Declaration.doNotShareData);
-      // geigerApi = await getGeigerApi(
-      //     '', 'miCyberrangePlugin', Declaration.doNotShareData);
-      if (geigerApi != null) {
-        storageController = geigerApi!.getStorage();
-        if (storageController == null) {
-          log('Could not get the storageController');
+      if (localMaster != null) {
+        await localMaster!.zapState();
+        masterListener = SimpleEventListener('master');
+        List<MessageType> allEvents = [MessageType.allEvents];
+        await localMaster!.registerListener(allEvents, masterListener!);
+        try {
+          storageController = localMaster!.getStorage();
+          if (storageController == null) {
+            log('Could not get the storageController');
+          }
+        } catch (e2) {
+          log('Failed to get the storage Controller');
+          log(e2.toString());
         }
       } else {
         log('Could not get the GeigerAPI');
@@ -28,36 +38,7 @@ class GeigerConnector {
     }
   }
 
-  Future<void> writeToGeigerStorage(String data) async {
-    try {
-      log('Found the data node - Going to write the data');
-      Node node = await storageController!.get(':data-node');
-      await node.updateValue(NodeValueImpl('data', '$data'));
-      await storageController!.update(node);
-    } catch (e) {
-      log(e.toString());
-      log('Cannot find the data node - Going to create a new one');
-      Node node = NodeImpl('data-node', '');
-      await node.addValue(NodeValueImpl('data', '$data'));
-      await storageController!.add(node);
-    }
-  }
-
-  Future<String?> readDataFromGeigerStorage() async {
-    log('Trying to get the data node');
-    try {
-      log('Found the data node - Going to get the data');
-      Node node = await storageController!.get(':data-node');
-      NodeValue? nValue = await node.getValue('data');
-      if (nValue != null) {
-        return nValue.value;
-      } else {
-        log('Failed to retrieve the node value');
-      }
-    } catch (e) {
-      log('Failed to retrieve the data node');
-      log(e.toString());
-    }
-    return null;
+  List<Message> getEvents() {
+    return masterListener!.getEvents();
   }
 }

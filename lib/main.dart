@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:geiger_api/geiger_api.dart';
 import 'package:toolbox_api_test/geiger_connector.dart';
 
 GeigerConnector geigerConnector = GeigerConnector();
@@ -8,7 +9,6 @@ String? firstData;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await geigerConnector.initGeigerAPI();
-  firstData = await geigerConnector.readDataFromGeigerStorage();
   runApp(MyApp());
 }
 
@@ -28,46 +28,48 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // Get battery level.
-  String geigerData = firstData ?? 'Failed';
-  TextEditingController inputDataController = TextEditingController();
-  // bool _isReady = isReady;
+  List<Message> events = [];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Geiger API Test"),
+        title: Text("Geiger Toolbox"),
       ),
       body: Container(
         margin: EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text('Built at: ${DateTime.now().toIso8601String()}'),
-            const SizedBox(height: 20),
-            TextField(
-              controller: inputDataController,
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () async {
-                log('Enter data: ${inputDataController.text}');
-                String inputData = inputDataController.text.trim();
-                if (inputData != '') {
-                  await geigerConnector.writeToGeigerStorage(inputData);
-                  inputDataController.clear();
-                  String? newData =
-                      await geigerConnector.readDataFromGeigerStorage();
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Text('Built at: ${DateTime.now().toIso8601String()}'),
+              Divider(),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
                   setState(() {
-                    geigerData = newData ?? 'Failed!';
+                    events = geigerConnector.getEvents();
+                    log('Number of events: ${events.length}');
                   });
-                }
-              },
-              child: const Text('Save'),
-            ),
-            const SizedBox(height: 20),
-            Text('Geiger Data: $geigerData'),
-          ],
+                },
+                child: const Text('Load Events'),
+              ),
+              const SizedBox(height: 20),
+              Text('Events (${events.length})'),
+              SingleChildScrollView(
+                child: SizedBox(
+                  height: 400,
+                  child: ListView.builder(
+                    itemCount: events.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        leading: Text(events[index].requestId),
+                        title: Text(events[index].toString()),
+                      );
+                    },
+                  ),
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
