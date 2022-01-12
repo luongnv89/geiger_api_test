@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:toolbox_api_test/geiger_connector.dart';
-import 'package:toolbox_api_test/utils.dart';
+import 'package:geiger_api/geiger_api.dart';
+import 'package:toolbox_api_test/geiger_api_connector/sensor_node_model.dart';
 
-GeigerConnector geigerConnector = GeigerConnector();
+import 'geiger_api_connector/geiger_api_connector.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await readPackageInfo();
-  await geigerConnector.initGeigerStorage();
   runApp(MyApp());
 }
 
@@ -27,42 +26,144 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
+const String montimagePluginId = 'montimage-plugin-id';
+
 class _MyHomePageState extends State<MyHomePage> {
-  // Get battery level.
-  String geigerData = geigerConnector.readDataFromGeigerStorage() ?? 'Failed';
-  TextEditingController inputDataController = TextEditingController();
+  List<Message> events = [];
+  String errorMessage = '';
+  String userData = '';
+  String deviceData = '';
+
+  GeigerApiConnector masterApiConnector =
+      GeigerApiConnector(pluginId: GeigerApi.masterId);
+  GeigerApiConnector pluginApiConnector =
+      GeigerApiConnector(pluginId: montimagePluginId);
+  SensorDataModel userNodeDataModel = SensorDataModel(
+      sensorId: 'mi-cyberrange-score-sensor-id',
+      name: 'MI Cyberrange Score',
+      minValue: '0',
+      maxValue: '100',
+      valueType: 'double',
+      flag: '1',
+      threatsImpact:
+          '80efffaf-98a1-4e0a-8f5e-gr89388352ph,High;80efffaf-98a1-4e0a-8f5e-gr89388354sp,Hight;80efffaf-98a1-4e0a-8f5e-th89388365it,Hight;80efffaf-98a1-4e0a-8f5e-gr89388350ma,Medium;80efffaf-98a1-4e0a-8f5e-gr89388356db,Medium');
+  SensorDataModel deviceNodeDataModel = SensorDataModel(
+      sensorId: 'mi-ksp-scanner-is-rooted-device',
+      name: 'Is device rooted',
+      minValue: 'false',
+      maxValue: 'true',
+      valueType: 'boolean',
+      flag: '0',
+      threatsImpact:
+          '80efffaf-98a1-4e0a-8f5e-gr89388352ph,High;80efffaf-98a1-4e0a-8f5e-gr89388354sp,Hight;80efffaf-98a1-4e0a-8f5e-th89388365it,Hight;80efffaf-98a1-4e0a-8f5e-gr89388350ma,Medium;80efffaf-98a1-4e0a-8f5e-gr89388356db,Medium');
+
+  Future<void> initMasterPlugin() async {
+    await masterApiConnector.connectToGeigerAPI();
+    await masterApiConnector.connectToLocalStorage();
+    await masterApiConnector.registerListener();
+  }
+
+  Future<void> initExternalPlugin() async {
+    await pluginApiConnector.connectToGeigerAPI();
+    await pluginApiConnector.connectToLocalStorage();
+    await pluginApiConnector.prepareDeviceSensorRoot();
+    await pluginApiConnector.prepareUserSensorRoot();
+    await pluginApiConnector.addDeviceSensorNode(deviceNodeDataModel);
+    await pluginApiConnector.addUserSensorNode(userNodeDataModel);
+    pluginApiConnector.addMessagehandler(MessageType.scanPressed,
+        (Message msg) async {
+      await pluginApiConnector.sendDeviceSensorData(
+          deviceNodeDataModel.sensorId, 'false');
+      await pluginApiConnector.sendUserSensorData(
+          userNodeDataModel.sensorId, '90');
+    });
+    await pluginApiConnector.registerListener();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Geiger APIs - Version ${getVersion()}"),
+        title: Text("Geiger Toolbox"),
       ),
       body: Container(
         margin: EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            TextField(
-              controller: inputDataController,
-            ),
-            ElevatedButton(
-              onPressed: () {
-                log('Enter data: ${inputDataController.text}');
-                String inputData = inputDataController.text.trim();
-                if (inputData != '') {
-                  geigerConnector.writeToGeigerStorage(inputData);
-                  inputDataController.clear();
-                  setState(() {
-                    geigerData = geigerConnector.readDataFromGeigerStorage() ??
-                        'Failed!';
-                  });
-                }
-              },
-              child: const Text('Save to Geiger Storage'),
-            ),
-            SizedBox(height: 20),
-            Text('Geiger Data: $geigerData'),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Text('Built at: ${DateTime.now().toIso8601String()}'),
+              const Divider(),
+              const SizedBox(height: 10),
+              const Text('Master Plugin'),
+              ElevatedButton(
+                onPressed: () async {
+                  await initMasterPlugin();
+                },
+                child: const Text('Init GeigerAPI Master'),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  await masterApiConnector
+                      .sendAMessageType(MessageType.scanPressed);
+                },
+                child: const Text('Send SCAN_PRESSED'),
+              ),
+              Card(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () async {
+                        String? newUserData = await masterApiConnector
+                            .readGeigerValueOfUserSensor(
+                                montimagePluginId, userNodeDataModel.sensorId);
+                        String? newDeviceData = await masterApiConnector
+                            .readGeigerValueOfDeviceSensor(montimagePluginId,
+                                deviceNodeDataModel.sensorId);
+                        setState(() {
+                          userData = newUserData ?? userData;
+                          deviceData = newDeviceData ?? deviceData;
+                        });
+                      },
+                      child: Text('Refresh Data'),
+                    ),
+                    Column(
+                      children: [
+                        Text('User data: $userData'),
+                        Text('Device data: $deviceData'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(),
+              const SizedBox(height: 10),
+              const Text('External Plugin'),
+              ElevatedButton(
+                onPressed: () async {
+                  await initExternalPlugin();
+                },
+                child: const Text('Init GeigerAPI Plugin'),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  await pluginApiConnector.sendDeviceSensorData(
+                      deviceNodeDataModel.sensorId, "true");
+                },
+                child: const Text('Send a device data'),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  await pluginApiConnector.sendUserSensorData(
+                      userNodeDataModel.sensorId, "50");
+                },
+                child: const Text('Send a user data'),
+              ),
+            ],
+          ),
         ),
       ),
     );
