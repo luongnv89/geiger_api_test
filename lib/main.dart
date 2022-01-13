@@ -2,26 +2,29 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:geiger_api/geiger_api.dart';
-import 'package:toolbox_api_test/geiger_api_connector/sensor_node_model.dart';
-
 import 'geiger_api_connector/geiger_api_connector.dart';
+import 'geiger_api_connector/sensor_node_model.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     log('Start building the application');
-    return MaterialApp(
+    return const MaterialApp(
       home: MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
+  const MyHomePage({Key? key}) : super(key: key);
+
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
@@ -97,10 +100,10 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Geiger Toolbox"),
+        title: const Text("Geiger Toolbox"),
       ),
       body: Container(
-        margin: EdgeInsets.all(20),
+        margin: const EdgeInsets.all(20),
         child: SingleChildScrollView(
           child: Column(
             children: [
@@ -144,7 +147,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           deviceData = newDeviceData ?? deviceData;
                         });
                       },
-                      child: Text('Refresh Data'),
+                      child: const Text('Refresh Data'),
                     ),
                     Column(
                       children: [
