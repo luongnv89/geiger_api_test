@@ -57,19 +57,31 @@ class _MyHomePageState extends State<MyHomePage> {
       threatsImpact:
           '80efffaf-98a1-4e0a-8f5e-gr89388352ph,High;80efffaf-98a1-4e0a-8f5e-gr89388354sp,Hight;80efffaf-98a1-4e0a-8f5e-th89388365it,Hight;80efffaf-98a1-4e0a-8f5e-gr89388350ma,Medium;80efffaf-98a1-4e0a-8f5e-gr89388356db,Medium');
 
-  Future<void> initMasterPlugin() async {
-    await masterApiConnector.connectToGeigerAPI();
-    await masterApiConnector.connectToLocalStorage();
-    await masterApiConnector.registerListener();
+  Future<bool> initMasterPlugin() async {
+    final bool initGeigerAPI = await masterApiConnector.connectToGeigerAPI();
+    if (initGeigerAPI == false) return false;
+    final bool initLocalStorage =
+        await masterApiConnector.connectToLocalStorage();
+    if (initLocalStorage == false) return false;
+    final bool registerListener = await masterApiConnector.registerListener();
+    return registerListener;
   }
 
-  Future<void> initExternalPlugin() async {
-    await pluginApiConnector.connectToGeigerAPI();
-    await pluginApiConnector.connectToLocalStorage();
-    await pluginApiConnector.prepareDeviceSensorRoot();
-    await pluginApiConnector.prepareUserSensorRoot();
-    await pluginApiConnector.addDeviceSensorNode(deviceNodeDataModel);
-    await pluginApiConnector.addUserSensorNode(userNodeDataModel);
+  Future<bool> initExternalPlugin() async {
+    final bool initGeigerAPI = await pluginApiConnector.connectToGeigerAPI();
+    if (initGeigerAPI == false) return false;
+    bool initLocalStorage = await pluginApiConnector.connectToLocalStorage();
+    if (initLocalStorage == false) return false;
+    initLocalStorage = await pluginApiConnector.prepareDeviceSensorRoot();
+    if (initLocalStorage == false) return false;
+    initLocalStorage = await pluginApiConnector.prepareUserSensorRoot();
+    if (initLocalStorage == false) return false;
+    initLocalStorage =
+        await pluginApiConnector.addDeviceSensorNode(deviceNodeDataModel);
+    if (initLocalStorage == false) return false;
+    initLocalStorage =
+        await pluginApiConnector.addUserSensorNode(userNodeDataModel);
+    if (initLocalStorage == false) return false;
     pluginApiConnector.addMessagehandler(MessageType.scanPressed,
         (Message msg) async {
       await pluginApiConnector.sendDeviceSensorData(
@@ -77,7 +89,8 @@ class _MyHomePageState extends State<MyHomePage> {
       await pluginApiConnector.sendUserSensorData(
           userNodeDataModel.sensorId, '90');
     });
-    await pluginApiConnector.registerListener();
+    final bool registerListener = await pluginApiConnector.registerListener();
+    return registerListener;
   }
 
   @override
@@ -97,7 +110,12 @@ class _MyHomePageState extends State<MyHomePage> {
               const Text('Master Plugin'),
               ElevatedButton(
                 onPressed: () async {
-                  await initMasterPlugin();
+                  final bool masterPlugin = await initMasterPlugin();
+                  if (masterPlugin == false) {
+                    setState(() {
+                      errorMessage = 'Failed to init Master Plugin';
+                    });
+                  }
                 },
                 child: const Text('Init GeigerAPI Master'),
               ),
@@ -142,23 +160,39 @@ class _MyHomePageState extends State<MyHomePage> {
               const Text('External Plugin'),
               ElevatedButton(
                 onPressed: () async {
-                  await initExternalPlugin();
+                  final bool externalPlugin = await initExternalPlugin();
+                  if (externalPlugin == false) {
+                    setState(() {
+                      errorMessage = 'Failed to init External Plugin';
+                    });
+                  }
                 },
                 child: const Text('Init GeigerAPI Plugin'),
               ),
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
-                  await pluginApiConnector.sendDeviceSensorData(
-                      deviceNodeDataModel.sensorId, "true");
+                  final bool dataSent =
+                      await pluginApiConnector.sendDeviceSensorData(
+                          deviceNodeDataModel.sensorId, "true");
+                  if (dataSent == false) {
+                    setState(() {
+                      errorMessage = 'Failed to send data';
+                    });
+                  }
                 },
                 child: const Text('Send a device data'),
               ),
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
-                  await pluginApiConnector.sendUserSensorData(
-                      userNodeDataModel.sensorId, "50");
+                  final bool dataSent = await pluginApiConnector
+                      .sendUserSensorData(userNodeDataModel.sensorId, "50");
+                  if (dataSent == false) {
+                    setState(() {
+                      errorMessage = 'Failed to send data';
+                    });
+                  }
                 },
                 child: const Text('Send a user data'),
               ),

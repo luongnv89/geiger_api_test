@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:geiger_api/geiger_api.dart';
 import 'package:geiger_localstorage/geiger_localstorage.dart';
-import 'package:toolbox_api_test/geiger_api_connector/sensor_node_model.dart';
+import 'sensor_node_model.dart';
 
 import 'geiger_event_listener.dart';
 
@@ -23,10 +23,11 @@ class GeigerApiConnector {
   bool isListenerRegistered = false;
 
   // Get an instance of GeigerApi, to be able to start working with GeigerToolbox
-  Future<void> connectToGeigerAPI() async {
+  Future<bool> connectToGeigerAPI() async {
     log('Trying to connect to the GeigerApi');
     if (pluginApi != null) {
       log('Plugin $pluginId has been initialized');
+      return true;
     } else {
       try {
         flushGeigerApiCache();
@@ -34,14 +35,17 @@ class GeigerApiConnector {
           pluginApi =
               await getGeigerApi('', pluginId, Declaration.doNotShareData);
           log('MasterId: ${pluginApi.hashCode}');
+          return true;
         } else {
           pluginApi = await getGeigerApi(
               './$pluginId', pluginId, Declaration.doNotShareData);
           log('pluginApi: ${pluginApi.hashCode}');
+          return true;
         }
       } catch (e) {
         log('Failed to get the GeigerAPI');
         log(e.toString());
+        return false;
       }
     }
   }
@@ -54,10 +58,11 @@ class GeigerApiConnector {
   }
 
   // Get an instance of GeigerStorage to read/write data
-  Future<void> connectToLocalStorage() async {
+  Future<bool> connectToLocalStorage() async {
     log('Trying to connect to the GeigerStorage');
     if (storageController != null) {
       log('Plugin $pluginId has already connected to the GeigerStorage (${storageController.hashCode})');
+      return true;
     } else {
       try {
         storageController = pluginApi!.getStorage();
@@ -66,9 +71,11 @@ class GeigerApiConnector {
         currentDeviceId = await getUUID('currentDevice');
         log('currentUserId: $currentUserId');
         log('currentDeviceId: $currentDeviceId');
+        return true;
       } catch (e) {
         log('Failed to connect to the GeigerStorage');
         log(e.toString());
+        return false;
       }
     }
   }
@@ -84,30 +91,33 @@ class GeigerApiConnector {
   }
 
   // Register the listener to listen all messages (events)
-  Future<void> registerListener() async {
+  Future<bool> registerListener() async {
     if (isListenerRegistered == true) {
       log('Plugin ${pluginListener.hashCode} has been registered already!');
+      return true;
     } else {
       if (pluginListener == null) {
         pluginListener = GeigerEventListener('PluginListener-$pluginId');
         log('PluginListener: ${pluginListener.hashCode}');
-      } else {
-        try {
-          // await pluginApi!
-          //     .registerListener(handledEvents, pluginListener!); // This should be correct one
-          await pluginApi!
-              .registerListener([MessageType.allEvents], pluginListener!);
-          log('Plugin ${pluginListener.hashCode} has been registered and activated');
-          isListenerRegistered = true;
-        } catch (e) {
-          log('Failed to register listener');
-        }
+      }
+      try {
+        // await pluginApi!
+        //     .registerListener(handledEvents, pluginListener!); // This should be correct one
+        await pluginApi!
+            .registerListener([MessageType.allEvents], pluginListener!);
+        log('Plugin ${pluginListener.hashCode} has been registered and activated');
+        isListenerRegistered = true;
+        return true;
+      } catch (e) {
+        log('Failed to register listener');
+        log(e.toString());
+        return false;
       }
     }
   }
 
   // Send a simple message which contain only the message type to the GeigerToolbox
-  Future<void> sendAMessageType(MessageType messageType) async {
+  Future<bool> sendAMessageType(MessageType messageType) async {
     try {
       log('Trying to send a message type $messageType');
       final GeigerUrl testUrl =
@@ -120,9 +130,11 @@ class GeigerApiConnector {
       );
       await pluginApi!.sendMessage(request);
       log('A message type $messageType has been sent successfully');
+      return true;
     } catch (e) {
       log('Failed to send a message type $messageType');
       log(e.toString());
+      return false;
     }
   }
 
@@ -137,7 +149,7 @@ class GeigerApiConnector {
   }
 
   // Send some device sensor data to GeigerToolbox
-  Future<void> sendDeviceSensorData(String sensorId, String value) async {
+  Future<bool> sendDeviceSensorData(String sensorId, String value) async {
     String nodePath =
         ':Device:$currentDeviceId:$pluginId:data:metrics:$sensorId';
     try {
@@ -146,14 +158,16 @@ class GeigerApiConnector {
       await storageController!.addOrUpdate(node);
       log('Updated node: ');
       log(node.toString());
+      return true;
     } catch (e) {
       log('Failed to get node $nodePath');
       log(e.toString());
+      return false;
     }
   }
 
   // Send some user sensor data to GeigerToolbox
-  Future<void> sendUserSensorData(String sensorId, String value) async {
+  Future<bool> sendUserSensorData(String sensorId, String value) async {
     String nodePath = ':Users:$currentUserId:$pluginId:data:metrics:$sensorId';
     try {
       Node node = await storageController!.get(nodePath);
@@ -161,14 +175,16 @@ class GeigerApiConnector {
       await storageController!.addOrUpdate(node);
       log('Updated node: ');
       log(node.toString());
+      return true;
     } catch (e) {
       log('Failed to get node $nodePath');
       log(e.toString());
+      return false;
     }
   }
 
   // Prepare the device sensor root
-  Future<void> prepareDeviceSensorRoot() async {
+  Future<bool> prepareDeviceSensorRoot() async {
     log('Prepare sensor root for Device');
     try {
       await storageController!.addOrUpdate(
@@ -190,14 +206,16 @@ class GeigerApiConnector {
       Node testNode = await storageController!
           .get(':Device:$currentDeviceId:$pluginId:data:metrics');
       log('Root: ${testNode.toString()}');
+      return true;
     } catch (e) {
       log('Failed to prepare the sensor root node Device');
       log(e.toString());
+      return false;
     }
   }
 
   // Prepare the user sensor root
-  Future<void> prepareUserSensorRoot() async {
+  Future<bool> prepareUserSensorRoot() async {
     log('Prepare sensor root for Users');
     try {
       await storageController!.addOrUpdate(
@@ -219,21 +237,23 @@ class GeigerApiConnector {
       Node testNode = await storageController!
           .get(':Users:$currentUserId:$pluginId:data:metrics');
       log('Root: ${testNode.toString()}');
+      return true;
     } catch (e) {
       log('Failed to prepare the sensor root node Users');
       log(e.toString());
+      return false;
     }
   }
 
-  Future<void> addUserSensorNode(SensorDataModel sensorDataModel) async {
-    await _addSensorNode(sensorDataModel, 'Users');
+  Future<bool> addUserSensorNode(SensorDataModel sensorDataModel) async {
+    return await _addSensorNode(sensorDataModel, 'Users');
   }
 
-  Future<void> addDeviceSensorNode(SensorDataModel sensorDataModel) async {
-    await _addSensorNode(sensorDataModel, 'Device');
+  Future<bool> addDeviceSensorNode(SensorDataModel sensorDataModel) async {
+    return await _addSensorNode(sensorDataModel, 'Device');
   }
 
-  Future<void> _addSensorNode(
+  Future<bool> _addSensorNode(
       SensorDataModel sensorDataModel, String rootType) async {
     String rootPath =
         ':$rootType:${rootType == 'Users' ? currentUserId : currentDeviceId}:$pluginId:data:metrics';
@@ -263,13 +283,16 @@ class GeigerApiConnector {
       try {
         await storageController!.addOrUpdate(node);
         log('After adding a sensor node ${sensorDataModel.sensorId}');
+        return true;
       } catch (e2) {
         log('Failed to update Storage');
         log(e2.toString());
+        return false;
       }
     } catch (e) {
       log('Failed to add a sensor node ${sensorDataModel.sensorId}');
       log(e.toString());
+      return false;
     }
   }
 
