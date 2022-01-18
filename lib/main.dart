@@ -29,7 +29,7 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-const String montimagePluginId = 'montimage-plugin-id';
+const String montimagePluginId = '5a6487c7-c1c5-4f28-995e-8805e45bf1a3';
 
 class _MyHomePageState extends State<MyHomePage> {
   List<Message> events = [];
@@ -42,7 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
   GeigerApiConnector pluginApiConnector =
       GeigerApiConnector(pluginId: montimagePluginId);
   SensorDataModel userNodeDataModel = SensorDataModel(
-      sensorId: 'mi-cyberrange-score-sensor-id',
+      sensorId: '123e4567-e89b-42d3-a456-556642440sdk-m01',
       name: 'MI Cyberrange Score',
       minValue: '0',
       maxValue: '100',
@@ -198,6 +198,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 },
                 child: const Text('Send a user data'),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  pluginApiConnector.close();
+                },
+                child: const Text('Disconnect'),
               ),
             ],
           ),

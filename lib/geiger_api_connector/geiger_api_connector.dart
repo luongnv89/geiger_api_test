@@ -22,6 +22,26 @@ class GeigerApiConnector {
   List<MessageType> handledEvents = [];
   bool isListenerRegistered = false;
 
+  Future<void> close() async {
+    // if (storageController != null) {
+    //   try {
+    //     await storageController!.close();
+    //   } catch (e) {
+    //     log('Failed to close the Storage Controller');
+    //     log(e.toString());
+    //   }
+    // }
+
+    if (pluginApi != null) {
+      try {
+        await pluginApi!.close();
+      } catch (e) {
+        log('Failed to close the GeigerAPI');
+        log(e.toString());
+      }
+    }
+  }
+
   // Get an instance of GeigerApi, to be able to start working with GeigerToolbox
   Future<bool> connectToGeigerAPI() async {
     log('Trying to connect to the GeigerApi');
