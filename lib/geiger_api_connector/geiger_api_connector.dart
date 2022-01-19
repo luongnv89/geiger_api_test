@@ -58,7 +58,7 @@ class GeigerApiConnector {
           return true;
         } else {
           pluginApi = await getGeigerApi(
-              './$pluginId', pluginId, Declaration.doNotShareData);
+              './$pluginId', pluginId, Declaration.doShareData);
           log('pluginApi: ${pluginApi.hashCode}');
           return true;
         }
@@ -140,13 +140,14 @@ class GeigerApiConnector {
   Future<bool> sendAMessageType(MessageType messageType) async {
     try {
       log('Trying to send a message type $messageType');
-      final GeigerUrl testUrl =
-          GeigerUrl.fromSpec('geiger://${GeigerApi.masterId}/test');
+      // final GeigerUrl testUrl = GeigerUrl.fromSpec(
+      //     'geiger://${GeigerApi.masterId}/test'); // TODO: is that the testURL always like this?
+      // pluginApi.scanButtonPressed();
       final Message request = Message(
         pluginId,
         GeigerApi.masterId,
         messageType,
-        testUrl,
+        null,
       );
       await pluginApi!.sendMessage(request);
       log('A message type $messageType has been sent successfully');
