@@ -29,7 +29,7 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-const String montimagePluginId = '5a6487c7-c1c5-4f28-995e-8805e45bf1a3';
+const String montimagePluginId = 'this-is-my-stupid-plugin';
 
 class _MyHomePageState extends State<MyHomePage> {
   List<Message> events = [];
@@ -42,7 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
   GeigerApiConnector pluginApiConnector =
       GeigerApiConnector(pluginId: montimagePluginId);
   SensorDataModel userNodeDataModel = SensorDataModel(
-      sensorId: '123e4567-e89b-42d3-a456-556642440sdk-m01',
+      sensorId: '123e4567-e89b-42d3-a456-556642440sdk-m100',
       name: 'MI Cyberrange Score',
       minValue: '0',
       maxValue: '100',
@@ -205,6 +205,24 @@ class _MyHomePageState extends State<MyHomePage> {
                   pluginApiConnector.close();
                 },
                 child: const Text('Disconnect'),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  // trigger/send a SCAN_COMPLETED event
+                  await pluginApiConnector
+                      .sendAMessageType(MessageType.scanCompleted);
+                },
+                child: const Text('Send SCAN_COMPLETED event'),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  // trigger/send a STORAGE_EVENT event
+                  await pluginApiConnector
+                      .sendAMessageType(MessageType.storageEvent);
+                },
+                child: const Text('Send STORAGE_EVENT event'),
               ),
             ],
           ),
