@@ -29,7 +29,7 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-const String montimagePluginId = 'this-is-my-stupid-plugin';
+const String montimagePluginId = 'geiger-api-test-external-plugin-id';
 
 class _MyHomePageState extends State<MyHomePage> {
   List<Message> events = [];
@@ -42,7 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
   GeigerApiConnector pluginApiConnector =
       GeigerApiConnector(pluginId: montimagePluginId);
   SensorDataModel userNodeDataModel = SensorDataModel(
-      sensorId: '123e4567-e89b-42d3-a456-556642440sdk-m100',
+      sensorId: 'mi-cyberrange-score-sensor-id',
       name: 'MI Cyberrange Score',
       minValue: '0',
       maxValue: '100',
