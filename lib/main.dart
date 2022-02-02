@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geiger_api/geiger_api.dart';
 import 'geiger_api_connector/geiger_api_connector.dart';
 import 'geiger_api_connector/sensor_node_model.dart';
+import 'package:geiger_localstorage/geiger_localstorage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,7 +67,8 @@ class _MyHomePageState extends State<MyHomePage> {
     final bool initLocalStorage =
         await masterApiConnector.connectToLocalStorage();
     if (initLocalStorage == false) return false;
-    final bool registerListener = await masterApiConnector.registerListener();
+    final bool registerListener =
+        await masterApiConnector.registerPluginListener();
     return registerListener;
   }
 
@@ -75,25 +77,58 @@ class _MyHomePageState extends State<MyHomePage> {
     if (initGeigerAPI == false) return false;
     bool initLocalStorage = await pluginApiConnector.connectToLocalStorage();
     if (initLocalStorage == false) return false;
-    initLocalStorage = await pluginApiConnector.prepareDeviceSensorRoot();
+
+    // Prepare some data roots
+    initLocalStorage = await pluginApiConnector.prepareRoot([
+      'Device',
+      pluginApiConnector.currentDeviceId!,
+      montimagePluginId,
+      'data',
+      'metrics'
+    ], '');
     if (initLocalStorage == false) return false;
-    initLocalStorage = await pluginApiConnector.prepareUserSensorRoot();
+    initLocalStorage = await pluginApiConnector.prepareRoot([
+      'Users',
+      pluginApiConnector.currentUserId!,
+      montimagePluginId,
+      'data',
+      'metrics'
+    ], '');
     if (initLocalStorage == false) return false;
+    initLocalStorage = await pluginApiConnector.prepareRoot([
+      'Chatbot',
+      'sensors',
+      montimagePluginId,
+    ], '');
+    if (initLocalStorage == false) return false;
+
+    // Prepare some data nodes
     initLocalStorage =
         await pluginApiConnector.addDeviceSensorNode(deviceNodeDataModel);
     if (initLocalStorage == false) return false;
     initLocalStorage =
         await pluginApiConnector.addUserSensorNode(userNodeDataModel);
     if (initLocalStorage == false) return false;
-    pluginApiConnector.addMessagehandler(MessageType.scanPressed,
+
+    // Prepare for plugin event handler
+    pluginApiConnector.addPluginEventhandler(MessageType.scanPressed,
         (Message msg) async {
       await pluginApiConnector.sendDeviceSensorData(
           deviceNodeDataModel.sensorId, 'false');
       await pluginApiConnector.sendUserSensorData(
           userNodeDataModel.sensorId, '90');
     });
-    final bool registerListener = await pluginApiConnector.registerListener();
-    return registerListener;
+    final bool regPluginListener =
+        await pluginApiConnector.registerPluginListener();
+
+    // Prepare for storage event handler
+    final bool regStorageListener = await pluginApiConnector
+        .registerStorageListener(':',
+            (EventType eventType, Node oldNode, Node newNode) {
+      log('Received a storage change event');
+      log(newNode.toString());
+    });
+    return regPluginListener && regStorageListener;
   }
 
   @override
@@ -126,38 +161,75 @@ class _MyHomePageState extends State<MyHomePage> {
               ElevatedButton(
                 onPressed: () async {
                   await masterApiConnector
-                      .sendAMessageType(MessageType.scanPressed);
+                      .sendPluginEventType(MessageType.scanPressed);
                 },
                 child: const Text('Send SCAN_PRESSED'),
               ),
-              Card(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () async {
-                        String? newUserData = await masterApiConnector
-                            .readGeigerValueOfUserSensor(
-                                montimagePluginId, userNodeDataModel.sensorId);
-                        String? newDeviceData = await masterApiConnector
-                            .readGeigerValueOfDeviceSensor(montimagePluginId,
-                                deviceNodeDataModel.sensorId);
-                        setState(() {
-                          userData = newUserData ?? userData;
-                          deviceData = newDeviceData ?? deviceData;
-                        });
-                      },
-                      child: const Text('Refresh Data'),
-                    ),
-                    Column(
-                      children: [
-                        Text('User data: $userData'),
-                        Text('Device data: $deviceData'),
-                      ],
-                    ),
-                  ],
-                ),
+              // ElevatedButton(
+              //   onPressed: () {
+              //     final List<Message> allMessages =
+              //         masterApiConnector.getAllPluginEvents();
+              //     log('Number of messages: ${allMessages.length}');
+              //     for (var i = 0; i < allMessages.length; i++) {
+              //       final Message msg = allMessages[i];
+              //       // String payloadText = msg.payloadString ?? '<empty>';
+              //       // if (msg.payloadString!.isNotEmpty) {
+              //       //   payloadText = utf8.decode(msg.payload);
+              //       // }
+              //       log('Message type: ${msg.type.toString()}');
+              //       log(msg.toString());
+              //       // log(payloadText);
+              //     }
+
+              //     final List<EventChange> allStorageEvents =
+              //         masterApiConnector.getAllStorageEvents();
+              //     log('Number of Storage Event: ${allStorageEvents.length}');
+              //     for (var i = 0; i < allStorageEvents.length; i++) {
+              //       final EventChange event = allStorageEvents[i];
+              //       // String payloadText = msg.payloadString ?? '<empty>';
+              //       // if (msg.payloadString!.isNotEmpty) {
+              //       //   payloadText = utf8.decode(msg.payload);
+              //       // }
+              //       log('Event type: ${event.type}');
+              //       // log(payloadText);
+              //     }
+              //   },
+              //   child: const Text('View received events'),
+              // ),
+              ElevatedButton(
+                onPressed: () async {
+                  await masterApiConnector.dumpLocalStorage();
+                },
+                child: const Text('Dump Storage'),
               ),
+              // Card(
+              //   child: Row(
+              //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //     children: [
+              //       ElevatedButton(
+              //         onPressed: () async {
+              //           String? newUserData = await masterApiConnector
+              //               .readGeigerValueOfUserSensor(
+              //                   montimagePluginId, userNodeDataModel.sensorId);
+              //           String? newDeviceData = await masterApiConnector
+              //               .readGeigerValueOfDeviceSensor(montimagePluginId,
+              //                   deviceNodeDataModel.sensorId);
+              //           setState(() {
+              //             userData = newUserData ?? userData;
+              //             deviceData = newDeviceData ?? deviceData;
+              //           });
+              //         },
+              //         child: const Text('Refresh Data'),
+              //       ),
+              //       Column(
+              //         children: [
+              //           Text('User data: $userData'),
+              //           Text('Device data: $deviceData'),
+              //         ],
+              //       ),
+              //     ],
+              //   ),
+              // ),
               const Divider(),
               const SizedBox(height: 10),
               const Text('External Plugin'),
@@ -199,30 +271,42 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 child: const Text('Send a user data'),
               ),
+
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  // trigger/send a SCAN_COMPLETED event
+                  await pluginApiConnector
+                      .sendPluginEventType(MessageType.scanCompleted);
+                },
+                child: const Text('Send SCAN_COMPLETED event'),
+              ),
+              // const SizedBox(height: 10),
+              // ElevatedButton(
+              //   onPressed: () async {
+              //     // trigger/send a STORAGE_EVENT event
+              //     await pluginApiConnector
+              //         .sendPluginEventType(MessageType.storageEvent);
+              //   },
+              //   child: const Text('Send STORAGE_EVENT event'),
+              // ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  // trigger/send a STORAGE_EVENT event
+                  await pluginApiConnector.sendDataNode(
+                      ':Chatbot:sensors:$montimagePluginId:my-sensor-data',
+                      ['category', 'isSubmitted', 'threatInfo'],
+                      ['Malware', 'false', 'This is the threat info']);
+                },
+                child: const Text('Send a threat info to Chatbot'),
+              ),
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
                   pluginApiConnector.close();
                 },
                 child: const Text('Disconnect'),
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () async {
-                  // trigger/send a SCAN_COMPLETED event
-                  await pluginApiConnector
-                      .sendAMessageType(MessageType.scanCompleted);
-                },
-                child: const Text('Send SCAN_COMPLETED event'),
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () async {
-                  // trigger/send a STORAGE_EVENT event
-                  await pluginApiConnector
-                      .sendAMessageType(MessageType.storageEvent);
-                },
-                child: const Text('Send STORAGE_EVENT event'),
               ),
             ],
           ),

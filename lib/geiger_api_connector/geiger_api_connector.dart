@@ -4,7 +4,8 @@ import 'package:geiger_api/geiger_api.dart';
 import 'package:geiger_localstorage/geiger_localstorage.dart';
 import 'sensor_node_model.dart';
 
-import 'geiger_event_listener.dart';
+import 'plugin_event_listener.dart';
+import 'storage_event_listener.dart';
 
 class GeigerApiConnector {
   GeigerApiConnector({
@@ -18,20 +19,15 @@ class GeigerApiConnector {
   String? currentUserId; // will be retrieved from GeigerStorage
   String? currentDeviceId; // will be retrieved from GeigerStorage
 
-  GeigerEventListener? pluginListener;
+  PluginEventListener? pluginListener; // listen to Plugin Event
+  bool isPluginListenerRegistered = false;
   List<MessageType> handledEvents = [];
-  bool isListenerRegistered = false;
 
+  StorageEventListener? storageListener; // Listen to Storage Change event
+  bool isStorageListenerRegistered = false;
+
+  /// Close the geiger api properly
   Future<void> close() async {
-    // if (storageController != null) {
-    //   try {
-    //     await storageController!.close();
-    //   } catch (e) {
-    //     log('Failed to close the Storage Controller');
-    //     log(e.toString());
-    //   }
-    // }
-
     if (pluginApi != null) {
       try {
         await pluginApi!.close();
@@ -42,7 +38,7 @@ class GeigerApiConnector {
     }
   }
 
-  // Get an instance of GeigerApi, to be able to start working with GeigerToolbox
+  /// Get an instance of GeigerApi, to be able to start working with GeigerToolbox
   Future<bool> connectToGeigerAPI() async {
     log('Trying to connect to the GeigerApi');
     if (pluginApi != null) {
@@ -52,8 +48,7 @@ class GeigerApiConnector {
       try {
         flushGeigerApiCache();
         if (pluginId == GeigerApi.masterId) {
-          pluginApi =
-              await getGeigerApi('', pluginId, Declaration.doNotShareData);
+          pluginApi = await getGeigerApi('', pluginId, Declaration.doShareData);
           log('MasterId: ${pluginApi.hashCode}');
           return true;
         } else {
@@ -70,14 +65,14 @@ class GeigerApiConnector {
     }
   }
 
-  // Get UUID of user or device
+  /// Get UUID of user or device
   Future getUUID(var key) async {
     var local = await storageController!.get(':Local');
     var temp = await local.getValue(key);
     return temp?.getValue('en');
   }
 
-  // Get an instance of GeigerStorage to read/write data
+  /// Get an instance of GeigerStorage to read/write data
   Future<bool> connectToLocalStorage() async {
     log('Trying to connect to the GeigerStorage');
     if (storageController != null) {
@@ -100,24 +95,71 @@ class GeigerApiConnector {
     }
   }
 
-  // Dynamically define the handler for each message type
-  void addMessagehandler(MessageType type, Function handler) {
+  /// Get all storage change event from Storage Listener
+  List<EventChange> getAllStorageEvents() {
+    return storageListener!.events;
+  }
+
+  /// Dump local storage value into terminal
+  Future<void> dumpLocalStorage() async {
+    final String storageStr = await storageController!.dump(':');
+    log('Storage Contents:');
+    log(storageStr);
+    // Node demoExample02 = NodeImpl(':Local:DemoExample', '');
+    // await demoExample02.addOrUpdateValue(NodeValueImpl('GEIGERValue', '100'));
+    // log('Going to trigger some changes');
+    // await storageController!.addOrUpdate(demoExample02);
+  }
+
+  /// Dynamically define the handler for each plugin event
+  void addPluginEventhandler(MessageType type, Function handler) {
     if (pluginListener == null) {
-      pluginListener = GeigerEventListener('PluginListener-$pluginId');
+      pluginListener = PluginEventListener('PluginListener-$pluginId');
       log('PluginListener: ${pluginListener.hashCode}');
     }
     handledEvents.add(type);
-    pluginListener!.addMessageHandler(type, handler);
+    pluginListener!.addPluginEventHandler(type, handler);
   }
 
-  // Register the listener to listen all messages (events)
-  Future<bool> registerListener() async {
-    if (isListenerRegistered == true) {
-      log('Plugin ${pluginListener.hashCode} has been registered already!');
+  /// Register the storage listener
+  Future<bool> registerStorageListener(
+      String? searchPath, Function? storageEventhandler) async {
+    if (isStorageListenerRegistered == true) {
+      log('The storage listener ${pluginListener.hashCode} has been registered already!');
+      return true;
+    } else {
+      if (storageListener == null) {
+        // Create a storage listener
+        storageListener = StorageEventListener(
+            pluginId: pluginId, storageEventHandler: storageEventhandler);
+        log('storageListener: ${storageListener.hashCode}');
+      }
+      try {
+        SearchCriteria sc = SearchCriteria(searchPath: searchPath ?? ':');
+        await storageController!.registerChangeListener(storageListener!, sc);
+        log('Registered the Storage Event Listener');
+        // Node demoExample1 = NodeImpl(':Local:DemoExample', '');
+        // log('Going to trigger some changes');
+        // await storageController!.addOrUpdate(demoExample1);
+        log('Plugin ${storageListener.hashCode} has been registered and activated');
+        isStorageListenerRegistered = true;
+        return true;
+      } catch (e) {
+        log('Failed to register a storage listener');
+        log(e.toString());
+        return false;
+      }
+    }
+  }
+
+  // Register the plugin listener
+  Future<bool> registerPluginListener() async {
+    if (isPluginListenerRegistered == true) {
+      log('The plugin listener ${pluginListener.hashCode} has been registered already!');
       return true;
     } else {
       if (pluginListener == null) {
-        pluginListener = GeigerEventListener('PluginListener-$pluginId');
+        pluginListener = PluginEventListener('PluginListener-$pluginId');
         log('PluginListener: ${pluginListener.hashCode}');
       }
       try {
@@ -125,19 +167,19 @@ class GeigerApiConnector {
         //     .registerListener(handledEvents, pluginListener!); // This should be correct one
         await pluginApi!
             .registerListener([MessageType.allEvents], pluginListener!);
-        log('Plugin ${pluginListener.hashCode} has been registered and activated');
-        isListenerRegistered = true;
+        log('The plugin listener ${pluginListener.hashCode} has been registered and activated');
+        isPluginListenerRegistered = true;
         return true;
       } catch (e) {
-        log('Failed to register listener');
+        log('Failed to register a plugin listener');
         log(e.toString());
         return false;
       }
     }
   }
 
-  // Send a simple message which contain only the message type to the GeigerToolbox
-  Future<bool> sendAMessageType(MessageType messageType) async {
+  /// Send a simple Plugin Event which contain only the message type to the GeigerToolbox
+  Future<bool> sendPluginEventType(MessageType messageType) async {
     try {
       log('Trying to send a message type $messageType');
       // final GeigerUrl testUrl = GeigerUrl.fromSpec(
@@ -159,17 +201,17 @@ class GeigerApiConnector {
     }
   }
 
-  // Show some statistics of Listener
-  String getListenerToString() {
+  /// Show some statistics of Listener
+  String getPluginListenerStats() {
     return pluginListener.toString();
   }
 
-  // Get the list of received messages
-  List<Message> getAllMessages() {
-    return pluginListener!.getAllMessages();
+  /// Get the list of all plugin events
+  List<Message> getAllPluginEvents() {
+    return pluginListener!.getAllPluginEvents();
   }
 
-  // Send some device sensor data to GeigerToolbox
+  /// Send some device sensor data to GeigerToolbox
   Future<bool> sendDeviceSensorData(String sensorId, String value) async {
     String nodePath =
         ':Device:$currentDeviceId:$pluginId:data:metrics:$sensorId';
@@ -187,7 +229,7 @@ class GeigerApiConnector {
     }
   }
 
-  // Send some user sensor data to GeigerToolbox
+  /// Send some user sensor data to GeigerToolbox
   Future<bool> sendUserSensorData(String sensorId, String value) async {
     String nodePath = ':Users:$currentUserId:$pluginId:data:metrics:$sensorId';
     try {
@@ -198,69 +240,49 @@ class GeigerApiConnector {
       log(node.toString());
       return true;
     } catch (e) {
-      log('Failed to get node $nodePath');
+      log('Failed to send a data node $nodePath');
       log(e.toString());
       return false;
     }
   }
 
-  // Prepare the device sensor root
-  Future<bool> prepareDeviceSensorRoot() async {
-    log('Prepare sensor root for Device');
-    try {
-      await storageController!.addOrUpdate(
-        NodeImpl('Device', '', ':'),
-      );
-      await storageController!.addOrUpdate(
-        NodeImpl(currentDeviceId!, '', ':Device'),
-      );
-      await storageController!.addOrUpdate(
-        NodeImpl(pluginId, '', ':Device:$currentDeviceId'),
-      );
-      await storageController!.addOrUpdate(
-        NodeImpl('data', '', ':Device:$currentDeviceId:$pluginId'),
-      );
-      await storageController!.addOrUpdate(
-        NodeImpl('metrics', '', ':Device:$currentDeviceId:$pluginId:data'),
-      );
-      log('Root Device has been prepared');
-      Node testNode = await storageController!
-          .get(':Device:$currentDeviceId:$pluginId:data:metrics');
-      log('Root: ${testNode.toString()}');
-      return true;
-    } catch (e) {
-      log('Failed to prepare the sensor root node Device');
-      log(e.toString());
-      return false;
+  /// Prepare a root node with given path
+  Future<bool> prepareRoot(List<String> rootPath, String? owner) async {
+    String currentRoot = '';
+    int currentIndex = 0;
+    while (currentIndex < rootPath.length) {
+      try {
+        await storageController!.addOrUpdate(NodeImpl(rootPath[currentIndex],
+            owner ?? '', currentRoot == '' ? ':' : currentRoot));
+        currentRoot = '$currentRoot:${rootPath[currentIndex]}';
+        currentIndex++;
+      } catch (e) {
+        log('Failed to prepare the path: $currentRoot:${rootPath[currentIndex]}');
+        log(e.toString());
+        return false;
+      }
     }
+    Node testNode = await storageController!.get(currentRoot);
+    log('Root: ${testNode.toString()}');
+    return true;
   }
 
-  // Prepare the user sensor root
-  Future<bool> prepareUserSensorRoot() async {
-    log('Prepare sensor root for Users');
+  /// Send a data node which include creating a new node and write the data
+  Future<bool> sendDataNode(
+      String nodePath, List<String> keys, List<String> values) async {
+    if (keys.length != values.length) {
+      log('The size of keys and values must be the same');
+      return false;
+    }
     try {
-      await storageController!.addOrUpdate(
-        NodeImpl('Users', '', ':'),
-      );
-      await storageController!.addOrUpdate(
-        NodeImpl(currentUserId!, '', ':Users'),
-      );
-      await storageController!.addOrUpdate(
-        NodeImpl(pluginId, '', ':Users:$currentUserId'),
-      );
-      await storageController!.addOrUpdate(
-        NodeImpl('data', '', ':Users:$currentUserId:$pluginId'),
-      );
-      await storageController!.addOrUpdate(
-        NodeImpl('metrics', '', ':Users:$currentUserId:$pluginId:data'),
-      );
-      log('Root Users has been prepared');
-      Node testNode = await storageController!
-          .get(':Users:$currentUserId:$pluginId:data:metrics');
-      log('Root: ${testNode.toString()}');
+      Node node = NodeImpl(nodePath, '');
+      for (var i = 0; i < keys.length; i++) {
+        await node.addValue(NodeValueImpl(keys[i], values[i]));
+      }
+      await storageController!.addOrUpdate(node);
       return true;
     } catch (e) {
-      log('Failed to prepare the sensor root node Users');
+      log('Failed to send a data node: $nodePath');
       log(e.toString());
       return false;
     }
@@ -317,19 +339,21 @@ class GeigerApiConnector {
     }
   }
 
+  /// Read a value of user sensor
   Future<String?> readGeigerValueOfUserSensor(
       String _pluginId, String sensorId) async {
-    return await _readValueOfNod(
+    return await _readValueOfNode(
         ':Users:$currentUserId:$_pluginId:data:metrics:$sensorId');
   }
 
+  /// Read a value of device sensor
   Future<String?> readGeigerValueOfDeviceSensor(
       String _pluginId, String sensorId) async {
-    return await _readValueOfNod(
+    return await _readValueOfNode(
         ':Device:$currentDeviceId:$_pluginId:data:metrics:$sensorId');
   }
 
-  Future<String?> _readValueOfNod(String nodePath) async {
+  Future<String?> _readValueOfNode(String nodePath) async {
     log('Going to get value of node at $nodePath');
     try {
       Node node = await storageController!.get(nodePath);
