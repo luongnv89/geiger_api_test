@@ -67,9 +67,11 @@ class _MyHomePageState extends State<MyHomePage> {
     final bool initLocalStorage =
         await masterApiConnector.connectToLocalStorage();
     if (initLocalStorage == false) return false;
-    final bool registerListener =
+    final bool regPluginListener =
         await masterApiConnector.registerPluginListener();
-    return registerListener;
+    final bool regStorageListener =
+        await masterApiConnector.registerStorageListener();
+    return regPluginListener && regStorageListener;
   }
 
   Future<bool> initExternalPlugin() async {
@@ -122,12 +124,14 @@ class _MyHomePageState extends State<MyHomePage> {
         await pluginApiConnector.registerPluginListener();
 
     // Prepare for storage event handler
-    final bool regStorageListener = await pluginApiConnector
-        .registerStorageListener(':',
-            (EventType eventType, Node oldNode, Node newNode) {
-      log('Received a storage change event');
-      log(newNode.toString());
-    });
+    final bool regStorageListener =
+        await pluginApiConnector.registerStorageListener(
+            searchPath: ':',
+            storageEventhandler:
+                (EventType eventType, Node oldNode, Node newNode) {
+              log('Received a storage change event');
+              log(newNode.toString());
+            });
     return regPluginListener && regStorageListener;
   }
 
@@ -141,10 +145,12 @@ class _MyHomePageState extends State<MyHomePage> {
         margin: const EdgeInsets.all(20),
         child: SingleChildScrollView(
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
             children: [
               Text('Built at: ${DateTime.now().toIso8601String()}'),
               const Divider(),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               const Text('Master Plugin'),
               ElevatedButton(
                 onPressed: () async {
@@ -156,14 +162,22 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 },
                 child: const Text('Init GeigerAPI Master'),
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.orange,
+                  minimumSize: const Size.fromHeight(40),
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               ElevatedButton(
                 onPressed: () async {
                   await masterApiConnector
                       .sendPluginEventType(MessageType.scanPressed);
                 },
                 child: const Text('Send SCAN_PRESSED'),
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.orange,
+                  minimumSize: const Size.fromHeight(40),
+                ),
               ),
               // ElevatedButton(
               //   onPressed: () {
@@ -196,11 +210,16 @@ class _MyHomePageState extends State<MyHomePage> {
               //   },
               //   child: const Text('View received events'),
               // ),
+              const SizedBox(height: 5),
               ElevatedButton(
                 onPressed: () async {
                   await masterApiConnector.dumpLocalStorage();
                 },
                 child: const Text('Dump Storage'),
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.orange,
+                  minimumSize: const Size.fromHeight(40),
+                ),
               ),
               // Card(
               //   child: Row(
@@ -231,7 +250,7 @@ class _MyHomePageState extends State<MyHomePage> {
               //   ),
               // ),
               const Divider(),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               const Text('External Plugin'),
               ElevatedButton(
                 onPressed: () async {
@@ -243,8 +262,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 },
                 child: const Text('Init GeigerAPI Plugin'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(40),
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               ElevatedButton(
                 onPressed: () async {
                   final bool dataSent =
@@ -257,8 +279,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 },
                 child: const Text('Send a device data'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(40),
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               ElevatedButton(
                 onPressed: () async {
                   final bool dataSent = await pluginApiConnector
@@ -270,9 +295,12 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 },
                 child: const Text('Send a user data'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(40),
+                ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               ElevatedButton(
                 onPressed: () async {
                   // trigger/send a SCAN_COMPLETED event
@@ -280,8 +308,11 @@ class _MyHomePageState extends State<MyHomePage> {
                       .sendPluginEventType(MessageType.scanCompleted);
                 },
                 child: const Text('Send SCAN_COMPLETED event'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(40),
+                ),
               ),
-              // const SizedBox(height: 10),
+              // const SizedBox(height: 5),
               // ElevatedButton(
               //   onPressed: () async {
               //     // trigger/send a STORAGE_EVENT event
@@ -290,7 +321,7 @@ class _MyHomePageState extends State<MyHomePage> {
               //   },
               //   child: const Text('Send STORAGE_EVENT event'),
               // ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               ElevatedButton(
                 onPressed: () async {
                   // trigger/send a STORAGE_EVENT event
@@ -300,13 +331,19 @@ class _MyHomePageState extends State<MyHomePage> {
                       ['Malware', 'false', 'This is the threat info']);
                 },
                 child: const Text('Send a threat info to Chatbot'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(40),
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               ElevatedButton(
                 onPressed: () async {
                   pluginApiConnector.close();
                 },
                 child: const Text('Disconnect'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(40),
+                ),
               ),
             ],
           ),
