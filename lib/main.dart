@@ -128,9 +128,9 @@ class _MyHomePageState extends State<MyHomePage> {
         await pluginApiConnector.registerStorageListener(
             searchPath: ':',
             storageEventhandler:
-                (EventType eventType, Node oldNode, Node newNode) {
+                (EventType eventType, Node? oldNode, Node? newNode) {
               log('Received a storage change event');
-              log(newNode.toString());
+              log(newNode != null ? newNode.toString() : 'null');
             });
     return regPluginListener && regStorageListener;
   }

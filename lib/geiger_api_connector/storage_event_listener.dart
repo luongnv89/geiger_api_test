@@ -16,8 +16,8 @@ class StorageEventListener implements StorageListener {
       return storageEventHandler!(event, oldNode, newNode);
     } else {
       log("\n*** [$pluginId] receives a storage change event***");
-      log(oldNode.toString());
-      log(newNode.toString());
+      log(oldNode != null ? oldNode.toString() : 'null');
+      log(newNode != null ? newNode.toString() : 'null');
       log(event.toString());
       log('***\n');
     }
