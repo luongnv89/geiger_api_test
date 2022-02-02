@@ -321,7 +321,7 @@ class GeigerApiConnector {
       await node.addOrUpdateValue(
         NodeValueImpl('threatsImpact', sensorDataModel.threatsImpact),
       );
-      log('A node has been craeted');
+      log('A node has been created');
       log(node.toString());
       try {
         await storageController!.addOrUpdate(node);

@@ -37,6 +37,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String errorMessage = '';
   String userData = '';
   String deviceData = '';
+  bool isInProcessing = false;
 
   GeigerApiConnector masterApiConnector =
       GeigerApiConnector(pluginId: GeigerApi.masterId);
@@ -141,214 +142,356 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: const Text("Geiger Toolbox"),
       ),
-      body: Container(
-        margin: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Text('Built at: ${DateTime.now().toIso8601String()}'),
-              const Divider(),
-              const SizedBox(height: 5),
-              const Text('Master Plugin'),
-              ElevatedButton(
-                onPressed: () async {
-                  final bool masterPlugin = await initMasterPlugin();
-                  if (masterPlugin == false) {
-                    setState(() {
-                      errorMessage = 'Failed to init Master Plugin';
-                    });
-                  }
-                },
-                child: const Text('Init GeigerAPI Master'),
-                style: ElevatedButton.styleFrom(
-                  primary: Colors.orange,
-                  minimumSize: const Size.fromHeight(40),
-                ),
-              ),
-              const SizedBox(height: 5),
-              ElevatedButton(
-                onPressed: () async {
-                  await masterApiConnector
-                      .sendPluginEventType(MessageType.scanPressed);
-                },
-                child: const Text('Send SCAN_PRESSED'),
-                style: ElevatedButton.styleFrom(
-                  primary: Colors.orange,
-                  minimumSize: const Size.fromHeight(40),
-                ),
-              ),
-              // ElevatedButton(
-              //   onPressed: () {
-              //     final List<Message> allMessages =
-              //         masterApiConnector.getAllPluginEvents();
-              //     log('Number of messages: ${allMessages.length}');
-              //     for (var i = 0; i < allMessages.length; i++) {
-              //       final Message msg = allMessages[i];
-              //       // String payloadText = msg.payloadString ?? '<empty>';
-              //       // if (msg.payloadString!.isNotEmpty) {
-              //       //   payloadText = utf8.decode(msg.payload);
-              //       // }
-              //       log('Message type: ${msg.type.toString()}');
-              //       log(msg.toString());
-              //       // log(payloadText);
-              //     }
+      body: isInProcessing == true
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : Container(
+              margin: const EdgeInsets.all(20),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Text('Built at: ${DateTime.now().toIso8601String()}'),
+                    const Divider(),
+                    const SizedBox(height: 5),
+                    const Text('Master Plugin'),
+                    ElevatedButton(
+                      onPressed: () async {
+                        setState(() {
+                          isInProcessing = true;
+                        });
+                        final bool masterPlugin = await initMasterPlugin();
+                        if (masterPlugin == false) {
+                          setState(() {
+                            errorMessage = 'Failed to init Master Plugin';
+                          });
+                        } else {
+                          SnackBar snackBar = const SnackBar(
+                            content: Text(
+                                'The External Plugin has been intialized successfully'),
+                            // action: SnackBarAction(
+                            //   label: 'Undo',
+                            //   onPressed: () {
+                            //     // Some code to undo the change.
+                            //   },
+                            // ),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                        }
+                        setState(() {
+                          isInProcessing = false;
+                        });
+                      },
+                      child: const Text('Init GeigerAPI Master'),
+                      style: ElevatedButton.styleFrom(
+                        primary: Colors.orange,
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    ElevatedButton(
+                      onPressed: () async {
+                        setState(() {
+                          isInProcessing = true;
+                        });
+                        final bool sentScanPressed = await masterApiConnector
+                            .sendPluginEventType(MessageType.scanPressed);
+                        if (sentScanPressed == false) {
+                          log('Failed to send SCAN_PRESSED event');
+                          setState(() {
+                            errorMessage = 'Failed to send SCAN_PRESSED event';
+                          });
+                        } else {
+                          SnackBar snackBar = const SnackBar(
+                            content: Text('A SCAN_PRESSED event has been sent'),
+                            // action: SnackBarAction(
+                            //   label: 'Undo',
+                            //   onPressed: () {
+                            //     // Some code to undo the change.
+                            //   },
+                            // ),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                        }
+                        setState(() {
+                          isInProcessing = false;
+                        });
+                      },
+                      child: const Text('Send SCAN_PRESSED'),
+                      style: ElevatedButton.styleFrom(
+                        primary: Colors.orange,
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                    ),
+                    // ElevatedButton(
+                    //   onPressed: () {
+                    //     final List<Message> allMessages =
+                    //         masterApiConnector.getAllPluginEvents();
+                    //     log('Number of messages: ${allMessages.length}');
+                    //     for (var i = 0; i < allMessages.length; i++) {
+                    //       final Message msg = allMessages[i];
+                    //       // String payloadText = msg.payloadString ?? '<empty>';
+                    //       // if (msg.payloadString!.isNotEmpty) {
+                    //       //   payloadText = utf8.decode(msg.payload);
+                    //       // }
+                    //       log('Message type: ${msg.type.toString()}');
+                    //       log(msg.toString());
+                    //       // log(payloadText);
+                    //     }
 
-              //     final List<EventChange> allStorageEvents =
-              //         masterApiConnector.getAllStorageEvents();
-              //     log('Number of Storage Event: ${allStorageEvents.length}');
-              //     for (var i = 0; i < allStorageEvents.length; i++) {
-              //       final EventChange event = allStorageEvents[i];
-              //       // String payloadText = msg.payloadString ?? '<empty>';
-              //       // if (msg.payloadString!.isNotEmpty) {
-              //       //   payloadText = utf8.decode(msg.payload);
-              //       // }
-              //       log('Event type: ${event.type}');
-              //       // log(payloadText);
-              //     }
-              //   },
-              //   child: const Text('View received events'),
-              // ),
-              const SizedBox(height: 5),
-              ElevatedButton(
-                onPressed: () async {
-                  await masterApiConnector.dumpLocalStorage();
-                },
-                child: const Text('Dump Storage'),
-                style: ElevatedButton.styleFrom(
-                  primary: Colors.orange,
-                  minimumSize: const Size.fromHeight(40),
-                ),
-              ),
-              // Card(
-              //   child: Row(
-              //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //     children: [
-              //       ElevatedButton(
-              //         onPressed: () async {
-              //           String? newUserData = await masterApiConnector
-              //               .readGeigerValueOfUserSensor(
-              //                   montimagePluginId, userNodeDataModel.sensorId);
-              //           String? newDeviceData = await masterApiConnector
-              //               .readGeigerValueOfDeviceSensor(montimagePluginId,
-              //                   deviceNodeDataModel.sensorId);
-              //           setState(() {
-              //             userData = newUserData ?? userData;
-              //             deviceData = newDeviceData ?? deviceData;
-              //           });
-              //         },
-              //         child: const Text('Refresh Data'),
-              //       ),
-              //       Column(
-              //         children: [
-              //           Text('User data: $userData'),
-              //           Text('Device data: $deviceData'),
-              //         ],
-              //       ),
-              //     ],
-              //   ),
-              // ),
-              const Divider(),
-              const SizedBox(height: 5),
-              const Text('External Plugin'),
-              ElevatedButton(
-                onPressed: () async {
-                  final bool externalPlugin = await initExternalPlugin();
-                  if (externalPlugin == false) {
-                    setState(() {
-                      errorMessage = 'Failed to init External Plugin';
-                    });
-                  }
-                },
-                child: const Text('Init GeigerAPI Plugin'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(40),
-                ),
-              ),
-              const SizedBox(height: 5),
-              ElevatedButton(
-                onPressed: () async {
-                  final bool dataSent =
-                      await pluginApiConnector.sendDeviceSensorData(
-                          deviceNodeDataModel.sensorId, "true");
-                  if (dataSent == false) {
-                    setState(() {
-                      errorMessage = 'Failed to send data';
-                    });
-                  }
-                },
-                child: const Text('Send a device data'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(40),
-                ),
-              ),
-              const SizedBox(height: 5),
-              ElevatedButton(
-                onPressed: () async {
-                  final bool dataSent = await pluginApiConnector
-                      .sendUserSensorData(userNodeDataModel.sensorId, "50");
-                  if (dataSent == false) {
-                    setState(() {
-                      errorMessage = 'Failed to send data';
-                    });
-                  }
-                },
-                child: const Text('Send a user data'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(40),
-                ),
-              ),
+                    //     final List<EventChange> allStorageEvents =
+                    //         masterApiConnector.getAllStorageEvents();
+                    //     log('Number of Storage Event: ${allStorageEvents.length}');
+                    //     for (var i = 0; i < allStorageEvents.length; i++) {
+                    //       final EventChange event = allStorageEvents[i];
+                    //       // String payloadText = msg.payloadString ?? '<empty>';
+                    //       // if (msg.payloadString!.isNotEmpty) {
+                    //       //   payloadText = utf8.decode(msg.payload);
+                    //       // }
+                    //       log('Event type: ${event.type}');
+                    //       // log(payloadText);
+                    //     }
+                    //   },
+                    //   child: const Text('View received events'),
+                    // ),
+                    const SizedBox(height: 5),
+                    ElevatedButton(
+                      onPressed: () async {
+                        await masterApiConnector.dumpLocalStorage();
+                      },
+                      child: const Text('Dump Storage'),
+                      style: ElevatedButton.styleFrom(
+                        primary: Colors.orange,
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                    ),
+                    // Card(
+                    //   child: Row(
+                    //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //     children: [
+                    //       ElevatedButton(
+                    //         onPressed: () async {
+                    //           String? newUserData = await masterApiConnector
+                    //               .readGeigerValueOfUserSensor(
+                    //                   montimagePluginId, userNodeDataModel.sensorId);
+                    //           String? newDeviceData = await masterApiConnector
+                    //               .readGeigerValueOfDeviceSensor(montimagePluginId,
+                    //                   deviceNodeDataModel.sensorId);
+                    //           setState(() {
+                    //             userData = newUserData ?? userData;
+                    //             deviceData = newDeviceData ?? deviceData;
+                    //           });
+                    //         },
+                    //         child: const Text('Refresh Data'),
+                    //       ),
+                    //       Column(
+                    //         children: [
+                    //           Text('User data: $userData'),
+                    //           Text('Device data: $deviceData'),
+                    //         ],
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                    const Divider(),
+                    const SizedBox(height: 5),
+                    const Text('External Plugin'),
+                    ElevatedButton(
+                      onPressed: () async {
+                        setState(() {
+                          isInProcessing = true;
+                        });
+                        final bool externalPlugin = await initExternalPlugin();
+                        if (externalPlugin == false) {
+                          setState(() {
+                            errorMessage = 'Failed to init External Plugin';
+                          });
+                        } else {
+                          SnackBar snackBar = const SnackBar(
+                            content: Text(
+                                'The External Plugin has been intialized successfully'),
+                            // action: SnackBarAction(
+                            //   label: 'Undo',
+                            //   onPressed: () {
+                            //     // Some code to undo the change.
+                            //   },
+                            // ),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                        }
+                        setState(() {
+                          isInProcessing = false;
+                        });
+                      },
+                      child: const Text('Init GeigerAPI Plugin'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    ElevatedButton(
+                      onPressed: () async {
+                        setState(() {
+                          isInProcessing = true;
+                        });
+                        final bool dataSent =
+                            await pluginApiConnector.sendDeviceSensorData(
+                                deviceNodeDataModel.sensorId, "true");
+                        if (dataSent == false) {
+                          setState(() {
+                            errorMessage = 'Failed to send data';
+                          });
+                        } else {
+                          SnackBar snackBar = const SnackBar(
+                            content: Text('Data has been sent'),
+                            // action: SnackBarAction(
+                            //   label: 'Undo',
+                            //   onPressed: () {
+                            //     // Some code to undo the change.
+                            //   },
+                            // ),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                        }
+                        setState(() {
+                          isInProcessing = false;
+                        });
+                      },
+                      child: const Text('Send a device data'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    ElevatedButton(
+                      onPressed: () async {
+                        setState(() {
+                          isInProcessing = true;
+                        });
+                        final bool dataSent =
+                            await pluginApiConnector.sendUserSensorData(
+                                userNodeDataModel.sensorId, "50");
+                        if (dataSent == false) {
+                          setState(() {
+                            errorMessage = 'Failed to send data';
+                          });
+                        } else {
+                          SnackBar snackBar = const SnackBar(
+                            content: Text('Data has been sent'),
+                            // action: SnackBarAction(
+                            //   label: 'Undo',
+                            //   onPressed: () {
+                            //     // Some code to undo the change.
+                            //   },
+                            // ),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                        }
+                        setState(() {
+                          isInProcessing = false;
+                        });
+                      },
+                      child: const Text('Send a user data'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                    ),
 
-              const SizedBox(height: 5),
-              ElevatedButton(
-                onPressed: () async {
-                  // trigger/send a SCAN_COMPLETED event
-                  await pluginApiConnector
-                      .sendPluginEventType(MessageType.scanCompleted);
-                },
-                child: const Text('Send SCAN_COMPLETED event'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(40),
+                    const SizedBox(height: 5),
+                    ElevatedButton(
+                      onPressed: () async {
+                        // trigger/send a SCAN_COMPLETED event
+                        setState(() {
+                          isInProcessing = true;
+                        });
+                        final bool sentData = await pluginApiConnector
+                            .sendPluginEventType(MessageType.scanCompleted);
+                        if (sentData == false) {
+                          setState(() {
+                            errorMessage = 'Failed to send SCAN_COMPLETED';
+                          });
+                        } else {
+                          SnackBar snackBar = const SnackBar(
+                            content: Text('SCAN_COMPLETED has been sent'),
+                            // action: SnackBarAction(
+                            //   label: 'Undo',
+                            //   onPressed: () {
+                            //     // Some code to undo the change.
+                            //   },
+                            // ),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                        }
+                        setState(() {
+                          isInProcessing = false;
+                        });
+                      },
+                      child: const Text('Send SCAN_COMPLETED event'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                    ),
+                    // const SizedBox(height: 5),
+                    // ElevatedButton(
+                    //   onPressed: () async {
+                    //     // trigger/send a STORAGE_EVENT event
+                    //     await pluginApiConnector
+                    //         .sendPluginEventType(MessageType.storageEvent);
+                    //   },
+                    //   child: const Text('Send STORAGE_EVENT event'),
+                    // ),
+                    const SizedBox(height: 5),
+                    ElevatedButton(
+                      onPressed: () async {
+                        // trigger/send a STORAGE_EVENT event
+                        setState(() {
+                          isInProcessing = true;
+                        });
+                        final bool sentData = await pluginApiConnector.sendDataNode(
+                            ':Chatbot:sensors:$montimagePluginId:my-sensor-data',
+                            ['category', 'isSubmitted', 'threatInfo'],
+                            ['Malware', 'false', 'This is the threat info']);
+                        if (sentData == false) {
+                          setState(() {
+                            errorMessage = 'Failed to send data to Chatbot';
+                          });
+                        } else {
+                          SnackBar snackBar = const SnackBar(
+                            content: Text('A Data has been sent to Chatbot'),
+                            // action: SnackBarAction(
+                            //   label: 'Undo',
+                            //   onPressed: () {
+                            //     // Some code to undo the change.
+                            //   },
+                            // ),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                        }
+                        setState(() {
+                          isInProcessing = false;
+                        });
+                      },
+                      child: const Text('Send a threat info to Chatbot'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    ElevatedButton(
+                      onPressed: () async {
+                        pluginApiConnector.close();
+                      },
+                      child: const Text('Disconnect'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              // const SizedBox(height: 5),
-              // ElevatedButton(
-              //   onPressed: () async {
-              //     // trigger/send a STORAGE_EVENT event
-              //     await pluginApiConnector
-              //         .sendPluginEventType(MessageType.storageEvent);
-              //   },
-              //   child: const Text('Send STORAGE_EVENT event'),
-              // ),
-              const SizedBox(height: 5),
-              ElevatedButton(
-                onPressed: () async {
-                  // trigger/send a STORAGE_EVENT event
-                  await pluginApiConnector.sendDataNode(
-                      ':Chatbot:sensors:$montimagePluginId:my-sensor-data',
-                      ['category', 'isSubmitted', 'threatInfo'],
-                      ['Malware', 'false', 'This is the threat info']);
-                },
-                child: const Text('Send a threat info to Chatbot'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(40),
-                ),
-              ),
-              const SizedBox(height: 5),
-              ElevatedButton(
-                onPressed: () async {
-                  pluginApiConnector.close();
-                },
-                child: const Text('Disconnect'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(40),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }
