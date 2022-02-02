@@ -123,7 +123,7 @@ class GeigerApiConnector {
 
   /// Register the storage listener
   Future<bool> registerStorageListener(
-      String? searchPath, Function? storageEventhandler) async {
+      {String? searchPath, Function? storageEventhandler}) async {
     if (isStorageListenerRegistered == true) {
       log('The storage listener ${pluginListener.hashCode} has been registered already!');
       return true;
