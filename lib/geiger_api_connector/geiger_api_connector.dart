@@ -101,10 +101,11 @@ class GeigerApiConnector {
   }
 
   /// Dump local storage value into terminal
-  Future<void> dumpLocalStorage() async {
-    final String storageStr = await storageController!.dump(':');
+  Future<String> dumpLocalStorage(String? path) async {
+    final String storageStr = await storageController!.dump(path ?? ':');
     log('Storage Contents:');
     log(storageStr);
+    return storageStr;
     // Node demoExample02 = NodeImpl(':Local:DemoExample', '');
     // await demoExample02.addOrUpdateValue(NodeValueImpl('GEIGERValue', '100'));
     // log('Going to trigger some changes');
@@ -137,11 +138,7 @@ class GeigerApiConnector {
       try {
         SearchCriteria sc = SearchCriteria(searchPath: searchPath ?? ':');
         await storageController!.registerChangeListener(storageListener!, sc);
-        log('Registered the Storage Event Listener');
-        // Node demoExample1 = NodeImpl(':Local:DemoExample', '');
-        // log('Going to trigger some changes');
-        // await storageController!.addOrUpdate(demoExample1);
-        log('Plugin ${storageListener.hashCode} has been registered and activated');
+        log('StorageEventListener ${storageListener.hashCode} ($pluginId) has been registered');
         isStorageListenerRegistered = true;
         return true;
       } catch (e) {
@@ -167,7 +164,7 @@ class GeigerApiConnector {
         //     .registerListener(handledEvents, pluginListener!); // This should be correct one
         await pluginApi!
             .registerListener([MessageType.allEvents], pluginListener!);
-        log('The plugin listener ${pluginListener.hashCode} has been registered and activated');
+        log('PluginListener ${pluginListener.hashCode} ($pluginId) has been registered and activated');
         isPluginListenerRegistered = true;
         return true;
       } catch (e) {
@@ -209,6 +206,30 @@ class GeigerApiConnector {
   /// Get the list of all plugin events
   List<Message> getAllPluginEvents() {
     return pluginListener!.getAllPluginEvents();
+  }
+
+  String showAllPluginEvents() {
+    String ret = '';
+    final List<Message> allEvents = pluginListener!.getAllPluginEvents();
+    if (allEvents.isEmpty) return '<There is not any plugin event>';
+    ret = 'Total number of Plugin events: ${allEvents.length}\n\n';
+    for (var i = 0; i < allEvents.length; i++) {
+      ret += allEvents[i].toString();
+      ret += '\n-------\n';
+    }
+    return ret;
+  }
+
+  String showAllStorageEvents() {
+    String ret = '';
+    final List<EventChange> allEvents = storageListener!.getAllStorageEvents();
+    if (allEvents.isEmpty) return '<There is not any storage event>';
+    ret = 'Total number of storage events: ${allEvents.length}\n\n';
+    for (var i = 0; i < allEvents.length; i++) {
+      ret += allEvents[i].toString();
+      ret += '\n-------\n';
+    }
+    return ret;
   }
 
   /// Send some device sensor data to GeigerToolbox
