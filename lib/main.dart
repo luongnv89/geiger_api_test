@@ -548,7 +548,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       const SizedBox(height: 5),
                       ElevatedButton(
                         onPressed: () async {
-                          pluginApiConnector.close();
+                          await pluginApiConnector.close();
+                          setState(() {
+                            isExternalPluginStarted = false;
+                          });
                         },
                         child: const Text('Disconnect'),
                         style: ElevatedButton.styleFrom(

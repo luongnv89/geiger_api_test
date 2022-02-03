@@ -28,11 +28,40 @@ class GeigerApiConnector {
 
   /// Close the geiger api properly
   Future<void> close() async {
+    log('[close] Going to close the GeigerAPIConnector...');
     if (pluginApi != null) {
+      if (storageController != null) {
+        // Unregister all the listener
+        if (storageListener != null) {
+          log('[close] Going to deregister all the change listeners');
+          try {
+            await storageController!.deregisterChangeListener(storageListener!);
+            log('[close] All the change listeners have been removed');
+          } catch (e) {
+            log('[close] Failed to deregister the storage listener');
+            log(e.toString());
+          }
+        }
+        //close the storage controller
+        // log('[close] Going to close the storage controller');
+        // try {
+        //   await storageController!.close();
+        //   log('[close] The storage controller has been closed');
+        // } catch (e) {
+        //   log('[close] Failed to close the storage controller');
+        //   log(e.toString());
+        // }
+        storageController = null;
+        storageListener = null;
+      }
+      log('[close] Going to close the geiger api');
       try {
+        await pluginApi!.zapState();
         await pluginApi!.close();
+        pluginListener = null;
+        log('[close] The GeigerAPI has been closed');
       } catch (e) {
-        log('Failed to close the GeigerAPI');
+        log('[close] Failed to close the GeigerAPI');
         log(e.toString());
       }
     }
@@ -49,11 +78,13 @@ class GeigerApiConnector {
         flushGeigerApiCache();
         if (pluginId == GeigerApi.masterId) {
           pluginApi = await getGeigerApi('', pluginId, Declaration.doShareData);
+          pluginApi!.zapState();
           log('MasterId: ${pluginApi.hashCode}');
           return true;
         } else {
           pluginApi = await getGeigerApi(
               './$pluginId', pluginId, Declaration.doShareData);
+          pluginApi!.zapState();
           log('pluginApi: ${pluginApi.hashCode}');
           return true;
         }
@@ -82,11 +113,7 @@ class GeigerApiConnector {
       try {
         storageController = pluginApi!.getStorage();
         log('Connected to the GeigerStorage ${storageController.hashCode}');
-        currentUserId = await getUUID('currentUser');
-        currentDeviceId = await getUUID('currentDevice');
-        log('currentUserId: $currentUserId');
-        log('currentDeviceId: $currentDeviceId');
-        return true;
+        return await updateCurrentIds();
       } catch (e) {
         log('Failed to connect to the GeigerStorage');
         log(e.toString());
@@ -383,6 +410,21 @@ class GeigerApiConnector {
     } catch (e) {
       log('Failed to get value of node at $nodePath');
       log(e.toString());
+    }
+  }
+
+  Future<bool> updateCurrentIds() async {
+    log('Going to update the userId and the deviceId');
+    try {
+      currentUserId = await getUUID('currentUser');
+      currentDeviceId = await getUUID('currentDevice');
+      log('currentUserId: $currentUserId');
+      log('currentDeviceId: $currentDeviceId');
+      return true;
+    } catch (e) {
+      log('Failed to update the userId and the deviceId');
+      log(e.toString());
+      return false;
     }
   }
 }
