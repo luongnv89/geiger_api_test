@@ -10,11 +10,13 @@ import 'storage_event_listener.dart';
 class GeigerApiConnector {
   GeigerApiConnector({
     required this.pluginId,
+    this.exceptionHandler,
   });
 
   String pluginId; // Unique and assigned by GeigerToolbox
   GeigerApi? pluginApi;
   StorageController? storageController;
+  Function? exceptionHandler;
 
   String? currentUserId; // will be retrieved from GeigerStorage
   String? currentDeviceId; // will be retrieved from GeigerStorage
@@ -37,9 +39,12 @@ class GeigerApiConnector {
           try {
             await storageController!.deregisterChangeListener(storageListener!);
             log('[close] All the change listeners have been removed');
-          } catch (e) {
+          } catch (e, trace) {
             log('[close] Failed to deregister the storage listener');
             log(e.toString());
+            if (exceptionHandler != null) {
+              exceptionHandler!(e, trace);
+            }
           }
         }
         //close the storage controller
@@ -60,9 +65,12 @@ class GeigerApiConnector {
         await pluginApi!.close();
         pluginListener = null;
         log('[close] The GeigerAPI has been closed');
-      } catch (e) {
+      } catch (e, trace) {
         log('[close] Failed to close the GeigerAPI');
         log(e.toString());
+        if (exceptionHandler != null) {
+          exceptionHandler!(e, trace);
+        }
       }
     }
   }
@@ -88,9 +96,12 @@ class GeigerApiConnector {
           log('pluginApi: ${pluginApi.hashCode}');
           return true;
         }
-      } catch (e) {
+      } catch (e, trace) {
         log('Failed to get the GeigerAPI');
         log(e.toString());
+        if (exceptionHandler != null) {
+          exceptionHandler!(e, trace);
+        }
         return false;
       }
     }
@@ -114,9 +125,12 @@ class GeigerApiConnector {
         storageController = pluginApi!.getStorage();
         log('Connected to the GeigerStorage ${storageController.hashCode}');
         return await updateCurrentIds();
-      } catch (e) {
+      } catch (e, trace) {
         log('Failed to connect to the GeigerStorage');
         log(e.toString());
+        if (exceptionHandler != null) {
+          exceptionHandler!(e, trace);
+        }
         return false;
       }
     }
@@ -168,9 +182,12 @@ class GeigerApiConnector {
         log('StorageEventListener ${storageListener.hashCode} ($pluginId) has been registered');
         isStorageListenerRegistered = true;
         return true;
-      } catch (e) {
+      } catch (e, trace) {
         log('Failed to register a storage listener');
         log(e.toString());
+        if (exceptionHandler != null) {
+          exceptionHandler!(e, trace);
+        }
         return false;
       }
     }
@@ -194,9 +211,12 @@ class GeigerApiConnector {
         log('PluginListener ${pluginListener.hashCode} ($pluginId) has been registered and activated');
         isPluginListenerRegistered = true;
         return true;
-      } catch (e) {
+      } catch (e, trace) {
         log('Failed to register a plugin listener');
         log(e.toString());
+        if (exceptionHandler != null) {
+          exceptionHandler!(e, trace);
+        }
         return false;
       }
     }
@@ -218,9 +238,12 @@ class GeigerApiConnector {
       await pluginApi!.sendMessage(request);
       log('A message type $messageType has been sent successfully');
       return true;
-    } catch (e) {
+    } catch (e, trace) {
       log('Failed to send a message type $messageType');
       log(e.toString());
+      if (exceptionHandler != null) {
+        exceptionHandler!(e, trace);
+      }
       return false;
     }
   }
@@ -270,9 +293,12 @@ class GeigerApiConnector {
       log('Updated node: ');
       log(node.toString());
       return true;
-    } catch (e) {
+    } catch (e, trace) {
       log('Failed to get node $nodePath');
       log(e.toString());
+      if (exceptionHandler != null) {
+        exceptionHandler!(e, trace);
+      }
       return false;
     }
   }
@@ -287,9 +313,12 @@ class GeigerApiConnector {
       log('Updated node: ');
       log(node.toString());
       return true;
-    } catch (e) {
+    } catch (e, trace) {
       log('Failed to send a data node $nodePath');
       log(e.toString());
+      if (exceptionHandler != null) {
+        exceptionHandler!(e, trace);
+      }
       return false;
     }
   }
@@ -304,9 +333,12 @@ class GeigerApiConnector {
             owner ?? '', currentRoot == '' ? ':' : currentRoot));
         currentRoot = '$currentRoot:${rootPath[currentIndex]}';
         currentIndex++;
-      } catch (e) {
+      } catch (e, trace) {
         log('Failed to prepare the path: $currentRoot:${rootPath[currentIndex]}');
         log(e.toString());
+        if (exceptionHandler != null) {
+          exceptionHandler!(e, trace);
+        }
         return false;
       }
     }
@@ -329,9 +361,12 @@ class GeigerApiConnector {
       }
       await storageController!.addOrUpdate(node);
       return true;
-    } catch (e) {
+    } catch (e, trace) {
       log('Failed to send a data node: $nodePath');
       log(e.toString());
+      if (exceptionHandler != null) {
+        exceptionHandler!(e, trace);
+      }
       return false;
     }
   }
@@ -375,14 +410,20 @@ class GeigerApiConnector {
         await storageController!.addOrUpdate(node);
         log('After adding a sensor node ${sensorDataModel.sensorId}');
         return true;
-      } catch (e2) {
+      } catch (e2, trace2) {
         log('Failed to update Storage');
         log(e2.toString());
+        if (exceptionHandler != null) {
+          exceptionHandler!(e2, trace2);
+        }
         return false;
       }
-    } catch (e) {
+    } catch (e, trace) {
       log('Failed to add a sensor node ${sensorDataModel.sensorId}');
       log(e.toString());
+      if (exceptionHandler != null) {
+        exceptionHandler!(e, trace);
+      }
       return false;
     }
   }
@@ -407,9 +448,12 @@ class GeigerApiConnector {
       Node node = await storageController!.get(nodePath);
       var temp = await node.getValue('GEIGERValue');
       return temp?.getValue('en');
-    } catch (e) {
+    } catch (e, trace) {
       log('Failed to get value of node at $nodePath');
       log(e.toString());
+      if (exceptionHandler != null) {
+        exceptionHandler!(e, trace);
+      }
     }
   }
 
@@ -421,9 +465,12 @@ class GeigerApiConnector {
       log('currentUserId: $currentUserId');
       log('currentDeviceId: $currentDeviceId');
       return true;
-    } catch (e) {
+    } catch (e, trace) {
       log('Failed to update the userId and the deviceId');
       log(e.toString());
+      if (exceptionHandler != null) {
+        exceptionHandler!(e, trace);
+      }
       return false;
     }
   }
