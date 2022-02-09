@@ -454,6 +454,7 @@ class GeigerApiConnector {
       if (exceptionHandler != null) {
         exceptionHandler!(e, trace);
       }
+      return null;
     }
   }
 
