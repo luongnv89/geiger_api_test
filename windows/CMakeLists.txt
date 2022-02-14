@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(all_platform LANGUAGES CXX)
 
-set(BINARY_NAME "all_platform")
+set(BINARY_NAME "Geiger API Test")
 
 cmake_policy(SET CMP0063 NEW)
 
