@@ -29,12 +29,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  sqlite3_flutter_libs: 0.5.1
-  geiger_api: ^0.6.2
+  geiger_api_connector: ^0.1.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.2
+  # cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:

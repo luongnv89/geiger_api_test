@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:geiger_api/geiger_api.dart';
-import 'geiger_api_connector/geiger_api_connector.dart';
-import 'geiger_api_connector/sensor_node_model.dart';
+import 'package:geiger_api_connector/geiger_api_connector.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
