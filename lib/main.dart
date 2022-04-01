@@ -61,6 +61,10 @@ class _MyHomePageState extends State<MyHomePage> {
       threatsImpact:
           '80efffaf-98a1-4e0a-8f5e-gr89388352ph,High;80efffaf-98a1-4e0a-8f5e-gr89388354sp,Hight;80efffaf-98a1-4e0a-8f5e-th89388365it,Hight;80efffaf-98a1-4e0a-8f5e-gr89388350ma,Medium;80efffaf-98a1-4e0a-8f5e-gr89388356db,Medium');
 
+  String masterExecutor = 'com.montimage.geiger_api_test;'
+      'com.montimage.geiger_api_test.MainActivity;'
+      'TODO';
+
   Future<bool> initMasterPlugin() async {
     final bool initGeigerAPI = await masterApiConnector.connectToGeigerAPI();
     if (initGeigerAPI == false) return false;
@@ -336,6 +340,20 @@ class _MyHomePageState extends State<MyHomePage> {
                         },
                         child: Text(
                             'Show the received users sensor data ($userData)'),
+                        style: ElevatedButton.styleFrom(
+                          primary: Colors.orange,
+                          minimumSize: const Size.fromHeight(40),
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      ElevatedButton(
+                        onPressed: () async {
+                          await masterApiConnector.callExternalPlugin(
+                              'geiger-api-example-external-plugin-id');
+                        },
+                        child: const Text('Open the last connected plugin'),
                         style: ElevatedButton.styleFrom(
                           primary: Colors.orange,
                           minimumSize: const Size.fromHeight(40),

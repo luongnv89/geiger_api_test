@@ -1,4 +1,4 @@
-package com.example.toolbox_api_test;
+package com.montimage.geiger_api_test;
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity;
@@ -14,37 +14,37 @@ import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 
-
 public class MainActivity extends FlutterActivity {
 
   @Override
   public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
-  super.configureFlutterEngine(flutterEngine);
+    super.configureFlutterEngine(flutterEngine);
     new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), "channels/xxx")
         .setMethodCallHandler(
-          (call, result) -> {
-            if (call.method.equals("getBatteryLevel")) {
-              String message = getBatteryLevel() + " %";
-              if (!message.isEmpty()) {
-                result.success(message);
+            (call, result) -> {
+              if (call.method.equals("getBatteryLevel")) {
+                String message = getBatteryLevel() + " %";
+                if (!message.isEmpty()) {
+                  result.success(message);
+                } else {
+                  result.error("UNAVAILABLE", "Message is empty.", null);
+                }
               } else {
-                result.error("UNAVAILABLE", "Message is empty.", null);
+                result.notImplemented();
               }
-            } else {
-              result.notImplemented();
             }
-          }
 
         );
   }
+
   private int getBatteryLevel() {
     int batteryLevel = -1;
     if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
       BatteryManager batteryManager = (BatteryManager) getSystemService(BATTERY_SERVICE);
       batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
     } else {
-      Intent intent = new ContextWrapper(getApplicationContext()).
-          registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+      Intent intent = new ContextWrapper(getApplicationContext()).registerReceiver(null,
+          new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
       batteryLevel = (intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) * 100) /
           intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
     }

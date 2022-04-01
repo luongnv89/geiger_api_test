@@ -1,6 +1,6 @@
 {
-    "name": "toolbox_api_test",
-    "short_name": "toolbox_api_test",
+    "name": "geiger_api_test",
+    "short_name": "geiger_api_test",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
